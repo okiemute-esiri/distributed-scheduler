@@ -92,10 +92,14 @@ export class SchedulerService {
     if (!job) throw new Error("job not found");
 
     const completed: Execution = {
-      ...execution,
+      id: execution.id,
+      jobId: execution.jobId,
+      runKey: execution.runKey,
+      workerId: execution.workerId,
+      attempt: execution.attempt,
       status: "SUCCEEDED",
+      startedAt: execution.startedAt,
       finishedAt: this.now(),
-      error: undefined,
     };
 
     await this.repository.saveExecution(completed);
