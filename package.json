@@ -6,6 +6,7 @@
   "engines": { "node": ">=22" },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/demo.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "demo": "tsx src/demo.ts"
