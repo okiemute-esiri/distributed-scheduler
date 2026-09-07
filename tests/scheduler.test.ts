@@ -27,6 +27,26 @@ describe("distributed scheduler coordination", () => {
     expect(second).toBeNull();
   });
 
+  it("grants at most one lease when workers contend concurrently", async () => {
+    const { scheduler } = harness();
+    const job = await scheduler.registerJob({ name: "job", intervalMs: 1000, firstRunAt: 1000 });
+
+    const leases = await Promise.all([
+      scheduler.tryAcquire(job.id, "worker-a", 500),
+      scheduler.tryAcquire(job.id, "worker-b", 500),
+      scheduler.tryAcquire(job.id, "worker-c", 500),
+    ]);
+
+    expect(leases.filter((lease) => lease !== null)).toHaveLength(1);
+  });
+
+  it("rejects invalid lease durations", async () => {
+    const { scheduler } = harness();
+    const job = await scheduler.registerJob({ name: "job", intervalMs: 1000, firstRunAt: 1000 });
+
+    await expect(scheduler.tryAcquire(job.id, "worker-a", 0)).rejects.toThrow("leaseMs must be a positive integer");
+  });
+
   it("recovers a job after a lease expires", async () => {
     const { scheduler, setNow } = harness();
     const job = await scheduler.registerJob({ name: "job", intervalMs: 1000, firstRunAt: 1000 });

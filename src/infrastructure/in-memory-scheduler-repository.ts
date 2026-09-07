@@ -32,8 +32,14 @@ export class InMemorySchedulerRepository implements SchedulerRepository {
     return lease ? structuredClone(lease) : null;
   }
 
-  async saveLease(lease: Lease): Promise<void> {
+  async tryAcquireLease(lease: Lease, now: number): Promise<boolean> {
+    const current = this.leases.get(lease.jobId);
+    if (current && current.expiresAt > now && current.workerId !== lease.workerId) {
+      return false;
+    }
+
     this.leases.set(lease.jobId, structuredClone(lease));
+    return true;
   }
 
   async deleteLease(jobId: string): Promise<void> {

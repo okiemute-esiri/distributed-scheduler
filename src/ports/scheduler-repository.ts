@@ -8,7 +8,7 @@ export interface SchedulerRepository {
   updateJob(job: Job): Promise<void>;
 
   getLease(jobId: string): Promise<Lease | null>;
-  saveLease(lease: Lease): Promise<void>;
+  tryAcquireLease(lease: Lease, now: number): Promise<boolean>;
   deleteLease(jobId: string): Promise<void>;
 
   getExecutionByRunKey(runKey: string): Promise<Execution | null>;
