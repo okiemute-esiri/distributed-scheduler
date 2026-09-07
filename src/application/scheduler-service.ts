@@ -32,13 +32,13 @@ export class SchedulerService {
   }
 
   async tryAcquire(jobId: string, workerId: string, leaseMs: number): Promise<Lease | null> {
-    const job = await this.repository.getJob(jobId);
-    if (!job || job.status !== "ACTIVE" || job.nextRunAt > this.now()) return null;
-
-    const existing = await this.repository.getLease(jobId);
-    if (existing && existing.expiresAt > this.now() && existing.workerId !== workerId) {
-      return null;
+    if (!Number.isSafeInteger(leaseMs) || leaseMs <= 0) {
+      throw new Error("leaseMs must be a positive integer");
     }
+
+    const now = this.now();
+    const job = await this.repository.getJob(jobId);
+    if (!job || job.status !== "ACTIVE" || job.nextRunAt > now) return null;
 
     const runKey = `${job.id}:${job.nextRunAt}`;
     const completed = await this.repository.getExecutionByRunKey(runKey);
@@ -47,12 +47,11 @@ export class SchedulerService {
     const lease: Lease = {
       jobId,
       workerId,
-      expiresAt: this.now() + leaseMs,
+      expiresAt: now + leaseMs,
       runKey,
     };
 
-    await this.repository.saveLease(lease);
-    return lease;
+    return (await this.repository.tryAcquireLease(lease, now)) ? lease : null;
   }
 
   async startExecution(lease: Lease): Promise<Execution> {
